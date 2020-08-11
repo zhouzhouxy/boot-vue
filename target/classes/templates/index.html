@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="/css/elementui.css">
+    <script src="/js/vue.js"></script>
+    <script src="/js/axios.js"></script>
+    <script src="/js/elementui.js"></script>
+</head>
+<body>
+<div id="app">
+    <!--查询条件 和 添加按钮-->
+    <el-row>
+        <el-col :span="22">
+
+            <el-form :inline="true" :model="searchMap" class="demo-form-inline">
+                <el-form-item label="图书名称">
+                    <el-input v-model="searchMap.bookName" placeholder="图书名称"></el-input>
+                </el-form-item>
+
+                <el-form-item label="作者">
+                    <el-input v-model="searchMap.author" placeholder="作者"></el-input>
+                </el-form-item>
+
+                <el-form-item label="出版时间">
+                    <el-date-picker
+                            value-format="yyyy-MM-dd"
+                            v-model="searchMap.pressTime"
+                            type="daterange" range-separator="至"
+                            start-placeholder="开始日期" end-placeholder="结束日期">
+                    </el-date-picker>
+                </el-form-item>
+
+
+                <el-form-item>
+                    <el-button type="primary" @click="search">查询</el-button>
+                </el-form-item>
+            </el-form>
+
+        </el-col>
+        <el-col :span="2">
+            <el-button type="primary" @click="add()">添加</el-button>
+        </el-col>
+    </el-row>
+
+
+
+    <el-table
+            :data="tableData"
+            style="width: 100%">
+        <el-table-column
+                prop="bookId"
+                label="编号"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="bookName"
+                label="图书名称"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="author"
+                label="作者">
+        </el-table-column>
+
+        <el-table-column
+                prop="price"
+                label="价格">
+        </el-table-column>
+
+        <el-table-column
+                prop="pressTime"
+                label="出版日期">
+        </el-table-column>
+
+
+
+        <el-table-column
+                prop="press"
+                label="出版社">
+        </el-table-column>
+        <el-table-column fixed="right" label="操作" width="320">
+            <template slot-scope="scope">
+                <el-button type="warning"  @click="del(scope.row.bookId)">删除</el-button>
+                <el-button type="danger" @click="find(scope.row.bookId)">修改</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <!--分页控件-->
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :page-sizes="[5, 10, 15, 20, 30 ,40, 50]"
+            :page-size="searchMap.pageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="total">
+    </el-pagination>
+
+    <el-dialog title="书籍" :visible.sync="dialogFormVisible">
+        <el-form :model="book">
+            <el-form-item label="书籍名称">
+                <el-input v-model="book.bookName" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="作者" >
+                <el-input v-model="book.author" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="价格" >
+                <el-input v-model="book.price" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="出版社" >
+                <el-input v-model="book.press" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="出版日期" >
+                <el-date-picker type="date" v-model="book.pressTime" style="width: 100%;"></el-date-picker>
+            </el-form-item>
+
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="confirm">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+</body>
+
+<script type="text/javascript">
+    new Vue({
+        el:"#app",
+        data:{
+            total:0,
+            dialogFormVisible:false,
+            tableData:[],
+            searchMap:{
+                pageSize:5,
+                pageNum:1,
+            },
+            book:{}
+        },
+        methods:{
+            add(){
+                this.book={};
+                this.dialogFormVisible=true;
+            },
+            find(val){
+                axios.get(`/book/find_one/${val}`).then(res=>{
+                    this.book=res.data;
+                    this.dialogFormVisible=true;
+                })
+            },
+            //删除
+            del(val){
+                axios.delete(`/book/del/${val}`).then(res=> {
+                    if (res.data.success) {
+                        this.loadTable();
+                        this.$message({
+                            message: res.data.message,
+                            type: 'success'
+                        });
+                    } else {
+                        this.$message.error(res.data.message);
+                    }
+                })
+            },
+            confirm(){
+                if(this.book.bookId==null){
+                    //添加
+                    axios.post("/book/add",this.book,{"Content-Type":"application/json"}).then(res=>{
+                        if (res.data.success) {
+                            this.loadTable();
+                            this.$message({
+                                message: res.data.message,
+                                type: 'success'
+                            });
+                            this.dialogFormVisible=false;
+                        } else {
+                            this.$message.error(res.data.message);
+                        }
+                    })
+                }else{
+                    //修改
+                    axios.put("/book/up",this.book,{'Content-Type':"application/json"}).then(res=>{
+                        if (res.data.success) {
+                            this.loadTable();
+                            this.$message({
+                                message: res.data.message,
+                                type: 'success'
+                            });
+                            this.dialogFormVisible=false;
+                        } else {
+                            this.$message.error(res.data.message);
+                        }
+                    })
+                }
+            },
+            handleSizeChange(val){
+                this.searchMap.pageSize=val;
+                this.loadTable();
+            },
+            //加载表格
+            loadTable(){
+                axios.post("/book/query", this.searchMap,{"Content-Type":"application/json"}).then(response => {
+                    this.tableData=response.data.list;
+                    this.total=response.data.total;
+                });
+
+            },
+            //
+            handleCurrentChange(val){
+                this.searchMap.pageNum=val;
+                this.loadTable();
+            },
+            search(){
+                if(this.searchMap.pressTime!=null){
+                    this.searchMap.endTime=this.searchMap.pressTime[1];
+                    this.searchMap.startTime=this.searchMap.pressTime[0];
+                    delete this.searchMap.pressTime;
+                }
+                 console.log(this.searchMap);
+                this.loadTable();
+            }
+        },
+        created(){
+            this.loadTable();
+        }
+    })
+</script>
+</html>

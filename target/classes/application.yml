@@ -1,0 +1,24 @@
+server:
+  port: 1217
+spring:
+  application:
+    name: boot-crud
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    hikari:
+      username: root
+      password: 1105
+      maximum-pool-size: 30
+      minimum-idle: 10
+    url: jdbc:mysql:///hnguigu?useUnicode=true&characterEncoding=utf-8
+  thymeleaf:
+    prefix: classpath:/templates/
+    check-template: true
+    suffix: .html
+    encoding: utf-8
+logging:
+  level:
+    com.asura.vue.mapper: debug
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
